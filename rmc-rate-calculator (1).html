@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RMC Rate Worksheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #EDEAE3;
+    --panel: #F7F5F1;
+    --panel-alt: #E4E0D6;
+    --border: #C9C2B3;
+    --ink: #23241F;
+    --ink-muted: #71695A;
+    --rust: #A6431E;
+    --rust-dark: #7E3116;
+    --yellow: #D9A72E;
+    --green: #3F6B45;
+    --red: #A63C2E;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ overflow-x: hidden; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    padding: 28px 16px 60px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .sheet{
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+
+  .sheet__head{
+    padding: 28px 28px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .kicker{
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--rust);
+    font-weight: 600;
+  }
+  h1{
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 14.5px;
+    max-width: 52ch;
+    line-height: 1.5;
+  }
+
+  .block{
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .block:last-child{ border-bottom: none; }
+
+  .block__title-row{
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  h2{
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 14px;
+    letter-spacing: 0.01em;
+  }
+  .block__title-row h2{ margin-bottom: 0; }
+
+  .btn{
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 9px 14px;
+    cursor: pointer;
+    min-height: 38px;
+  }
+  .btn:hover{ border-color: var(--rust); color: var(--rust); }
+  .btn--text{
+    border: none;
+    background: none;
+    color: var(--ink-muted);
+    text-decoration: underline;
+    padding: 4px 0;
+    min-height: 0;
+  }
+  .btn--text:hover{ color: var(--rust); }
+
+  /* ---- Mix design: grid-based rows (responsive) ---- */
+  .mixTable{ width: 100%; }
+
+  .mixRow{
+    display: grid;
+    grid-template-columns: 1fr 84px 84px 96px 30px;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 0;
+  }
+  .mixRow.mixData{ border-bottom: 1px solid var(--panel-alt); }
+
+  .mixRow--head{
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .mixRow--head > div:not(:first-child){ text-align: right; }
+
+  .matField label{ display: none; }
+  .matField input{ width: 100%; }
+  .matField--qty input, .matField--rate input{ text-align: right; }
+  .matField--cost{ text-align: right; }
+  .matCost{
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .rowRemove{
+    border: none;
+    background: none;
+    color: var(--ink-muted);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 6px;
+    justify-self: center;
+  }
+  .rowRemove:hover{ color: var(--red); }
+
+  .mixRow--total{
+    grid-template-columns: 1fr auto;
+    padding-top: 12px;
+    font-weight: 600;
+  }
+  .totalValue{
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  input[type="text"], input[type="number"]{
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 8px 9px;
+  }
+  input[type="number"]{
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  input:focus{
+    outline: none;
+    border-color: var(--rust);
+  }
+
+  .twoCol{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .twoCol .block:first-child{ border-right: 1px solid var(--border); }
+
+  .fieldRow{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .fieldRow label{
+    font-size: 13.5px;
+    color: var(--ink-muted);
+  }
+  .fieldRow input[type="number"]{
+    width: 86px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .fieldRow.checkbox{
+    justify-content: flex-start;
+  }
+  .fieldRow.checkbox label{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .fieldRow.checkbox input{ width: 18px; height: 18px; }
+  .radios{
+    display: flex;
+    gap: 18px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .radios label{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .radios input{ width: 16px; height: 16px; }
+
+  .ledger__row{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 14.5px;
+    border-bottom: 1px dashed var(--panel-alt);
+  }
+  .ledger__row span:first-child{ min-width: 0; flex: 1 1 auto; }
+  .ledger__row span:last-child{
+    flex: 0 0 auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ledger__row--sub{
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .ledger__final{
+    margin-top: 12px;
+    padding: 16px 14px;
+    background: var(--ink);
+    color: var(--panel);
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .ledger__final span:last-child{
+    color: var(--yellow);
+    font-size: 18px;
+  }
+  .note{
+    margin: 12px 0 0;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+
+  .sellCheck{
+    margin-top: 14px;
+    padding-top: 4px;
+  }
+  #outActualProfit.pos, #outMarginCost.pos, #outMarginSell.pos{ color: var(--green); }
+  #outActualProfit.neg, #outMarginCost.neg, #outMarginSell.neg{ color: var(--red); }
+
+  ::placeholder{ color: var(--ink-muted); opacity: 0.6; }
+
+  /* ---- Tablet / stacked two-column panels ---- */
+  @media (max-width: 620px){
+    .twoCol{ grid-template-columns: 1fr; }
+    .twoCol .block:first-child{ border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  /* ---- Mobile: mix rows become stacked cards ---- */
+  @media (max-width: 560px){
+    .mixRow--head{ display: none; }
+
+    .mixRow.mixData{
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "name name"
+        "qty  rate"
+        "cost remove";
+      row-gap: 8px;
+      padding: 14px 0;
+    }
+    .matField--name{ grid-area: name; }
+    .matField--qty{ grid-area: qty; }
+    .matField--rate{ grid-area: rate; }
+    .matField--cost{
+      grid-area: cost;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      text-align: left;
+    }
+    .rowRemove{
+      grid-area: remove;
+      justify-self: end;
+      align-self: center;
+      font-size: 20px;
+      padding: 6px 10px;
+    }
+    .matField label{
+      display: block;
+      font-size: 11px;
+      color: var(--ink-muted);
+      margin-bottom: 3px;
+    }
+    .matField--cost label{ margin: 0; }
+
+    .mixRow--total{ padding-top: 14px; }
+  }
+
+  /* ---- Small phones: tighter outer spacing ---- */
+  @media (max-width: 480px){
+    body{ padding: 14px 8px 40px; }
+    .sheet__head{ padding: 20px 16px 16px; }
+    .block{ padding: 18px 16px; }
+    h1{ font-size: 22px; }
+    .sub{ font-size: 13.5px; }
+    .ledger__final{ font-size: 15px; }
+    .ledger__final span:last-child{ font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="sheet__head">
+    <p class="kicker">Concrete supply costing</p>
+    <h1>RMC Rate Worksheet</h1>
+    <p class="sub">Enter your mix design, overheads and transport — the rate per cum updates as you type.</p>
+  </div>
+
+  <div class="block" id="mixBlock">
+    <div class="block__title-row">
+      <h2>Mix design</h2>
+      <button class="btn" id="addRow" type="button">+ Add material</button>
+    </div>
+
+    <div class="mixTable">
+      <div class="mixRow mixRow--head" aria-hidden="true">
+        <div>Material</div>
+        <div>Qty (kg)</div>
+        <div>Rate (₹/kg)</div>
+        <div>Cost (₹)</div>
+        <div></div>
+      </div>
+      <div id="mixBody"></div>
+      <div class="mixRow mixRow--total">
+        <div class="totalLabel">Material total</div>
+        <div class="totalValue" id="materialTotal">₹0.00</div>
+      </div>
+    </div>
+
+    <button class="btn btn--text" id="resetBtn" type="button">Reset to standard M-25 mix</button>
+  </div>
+
+  <div class="twoCol">
+    <div class="block">
+      <h2>Overheads &amp; profit</h2>
+      <div class="fieldRow">
+        <label for="machineryPct">Machinery charge (% of material)</label>
+        <input type="number" id="machineryPct" value="1.5" step="0.1">
+      </div>
+      <div class="fieldRow">
+        <label for="labourPct">Labour charge (% of material)</label>
+        <input type="number" id="labourPct" value="2" step="0.1">
+      </div>
+      <div class="fieldRow">
+        <label for="profitPct">Plant profit (% of subtotal)</label>
+        <input type="number" id="profitPct" value="10" step="0.5">
+      </div>
+    </div>
+
+    <div class="block">
+      <h2>Transport</h2>
+      <div class="radios">
+        <label><input type="radio" name="method" value="flat"> Flat rate / km</label>
+        <label><input type="radio" name="method" value="mileage" checked> Mixer mileage</label>
+      </div>
+
+      <div id="flatFields" hidden>
+        <div class="fieldRow">
+          <label for="ratePerKm">Rate per km (₹)</label>
+          <input type="number" id="ratePerKm" value="15" step="0.5">
+        </div>
+      </div>
+
+      <div id="mileageFields">
+        <div class="fieldRow">
+          <label for="dieselPrice">Diesel price (₹/liter)</label>
+          <input type="number" id="dieselPrice" value="100" step="1">
+        </div>
+        <div class="fieldRow">
+          <label for="kmPerLiter">Mixer mileage (km/liter)</label>
+          <input type="number" id="kmPerLiter" value="2" step="0.1">
+        </div>
+      </div>
+
+      <div class="fieldRow">
+        <label for="distanceKm">Distance to site (km)</label>
+        <input type="number" id="distanceKm" value="5" step="0.5">
+      </div>
+      <div class="fieldRow checkbox">
+        <label><input type="checkbox" id="roundTrip" checked> Round trip</label>
+      </div>
+      <div class="fieldRow checkbox">
+        <label><input type="checkbox" id="spreadLoad" checked> Spread trip cost over mixer load</label>
+      </div>
+      <div class="fieldRow">
+        <label for="mixerCapacity">Mixer capacity (cum)</label>
+        <input type="number" id="mixerCapacity" value="7" step="0.5">
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h2>Final rate</h2>
+    <div class="ledger">
+      <div class="ledger__row"><span>Material</span><span id="outMaterial">₹0.00</span></div>
+      <div class="ledger__row"><span>Machinery charge</span><span id="outMachinery">₹0.00</span></div>
+      <div class="ledger__row"><span>Labour charge</span><span id="outLabour">₹0.00</span></div>
+      <div class="ledger__row ledger__row--sub"><span>Subtotal</span><span id="outSubtotal">₹0.00</span></div>
+      <div class="ledger__row"><span>Plant profit</span><span id="outProfit">₹0.00</span></div>
+      <div class="ledger__row ledger__row--sub"><span>Cost before transport</span><span id="outCostBeforeTransport">₹0.00</span></div>
+      <div class="ledger__row"><span>Transport (per cum)</span><span id="outTransport">₹0.00</span></div>
+      <div class="ledger__row ledger__final"><span>Final rate / cum</span><span id="outFinal">₹0.00</span></div>
+    </div>
+    <p class="note" id="loadNote"></p>
+  </div>
+
+  <div class="block">
+    <h2>Check a selling price</h2>
+    <div class="fieldRow">
+      <label for="sellingPrice">Your selling price (₹/cum)</label>
+      <input type="number" id="sellingPrice" placeholder="e.g. 4850" step="1">
+    </div>
+    <div class="sellCheck" id="sellCheck" hidden>
+      <div class="ledger__row"><span>Break-even (cost + transport, no target profit)</span><span id="outBreakeven">₹0.00</span></div>
+      <div class="ledger__row"><span>Actual profit / cum</span><span id="outActualProfit">₹0.00</span></div>
+      <div class="ledger__row"><span>Margin on cost</span><span id="outMarginCost">0.00%</span></div>
+      <div class="ledger__row"><span>Margin on selling price</span><span id="outMarginSell">0.00%</span></div>
+      <div class="ledger__row"><span id="gapLabel">Vs. target rate</span><span id="outGap">₹0.00</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const defaultMix = [
+    { name: 'Cement', qty: 290, rate: 6 },
+    { name: 'Fly Ash', qty: 100, rate: 0.6 },
+    { name: '20mm Aggregate', qty: 640, rate: 0.77 },
+    { name: '10mm Aggregate', qty: 460, rate: 0.77 },
+    { name: 'River Sand', qty: 425, rate: 2 },
+    { name: 'Crush Sand', qty: 425, rate: 0.93 },
+    { name: 'Admixture', qty: 2, rate: 28 },
+    { name: 'Water', qty: 180, rate: 1.5 },
+  ];
+
+  const mixBody = document.getElementById('mixBody');
+  let rowId = 0;
+
+  function fmt(n) {
+    if (!isFinite(n)) n = 0;
+    return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  }
+
+  function addRow(material) {
+    const row = document.createElement('div');
+    row.className = 'mixRow mixData';
+    row.dataset.id = 'row' + (rowId++);
+    row.innerHTML = `
+      <div class="matField matField--name">
+        <label>Material</label>
+        <input type="text" class="matName" value="${material ? material.name : ''}" placeholder="Material">
+      </div>
+      <div class="matField matField--qty">
+        <label>Qty (kg)</label>
+        <input type="number" class="matQty" value="${material ? material.qty : ''}" min="0" step="any">
+      </div>
+      <div class="matField matField--rate">
+        <label>Rate (₹/kg)</label>
+        <input type="number" class="matRate" value="${material ? material.rate : ''}" min="0" step="any">
+      </div>
+      <div class="matField matField--cost">
+        <label>Cost</label>
+        <span class="matCost">₹0.00</span>
+      </div>
+      <button class="rowRemove" type="button" aria-label="Remove material">×</button>
+    `;
+    mixBody.appendChild(row);
+    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
+    row.querySelector('.rowRemove').addEventListener('click', () => { row.remove(); recalc(); });
+  }
+
+  function buildDefaultMix() {
+    mixBody.innerHTML = '';
+    defaultMix.forEach(addRow);
+  }
+
+  function updateMethodVisibility() {
+    const method = document.querySelector('input[name="method"]:checked').value;
+    document.getElementById('flatFields').hidden = method !== 'flat';
+    document.getElementById('mileageFields').hidden = method !== 'mileage';
+  }
+
+  function recalc() {
+    let materialTotal = 0;
+    mixBody.querySelectorAll('.mixRow').forEach(row => {
+      const qty = parseFloat(row.querySelector('.matQty').value) || 0;
+      const rate = parseFloat(row.querySelector('.matRate').value) || 0;
+      const cost = qty * rate;
+      row.querySelector('.matCost').textContent = fmt(cost);
+      materialTotal += cost;
+    });
+    document.getElementById('materialTotal').textContent = fmt(materialTotal);
+
+    const machineryPct = parseFloat(document.getElementById('machineryPct').value) || 0;
+    const labourPct = parseFloat(document.getElementById('labourPct').value) || 0;
+    const profitPct = parseFloat(document.getElementById('profitPct').value) || 0;
+
+    const machinery = materialTotal * machineryPct / 100;
+    const labour = materialTotal * labourPct / 100;
+    const subtotal = materialTotal + machinery + labour;
+    const profit = subtotal * profitPct / 100;
+    const costBeforeTransport = subtotal + profit;
+
+    const method = document.querySelector('input[name="method"]:checked').value;
+    const distanceKm = parseFloat(document.getElementById('distanceKm').value) || 0;
+    const roundTrip = document.getElementById('roundTrip').checked;
+    const tripDistance = distanceKm * (roundTrip ? 2 : 1);
+
+    let tripCost = 0;
+    if (method === 'flat') {
+      const ratePerKm = parseFloat(document.getElementById('ratePerKm').value) || 0;
+      tripCost = tripDistance * ratePerKm;
+    } else {
+      const dieselPrice = parseFloat(document.getElementById('dieselPrice').value) || 0;
+      const kmPerLiter = parseFloat(document.getElementById('kmPerLiter').value) || 1;
+      const liters = tripDistance / kmPerLiter;
+      tripCost = liters * dieselPrice;
+    }
+
+    const spreadLoad = document.getElementById('spreadLoad').checked;
+    const mixerCapacity = parseFloat(document.getElementById('mixerCapacity').value) || 1;
+    const transportPerCum = spreadLoad ? tripCost / mixerCapacity : tripCost;
+
+    const finalRate = costBeforeTransport + transportPerCum;
+
+    document.getElementById('outMaterial').textContent = fmt(materialTotal);
+    document.getElementById('outMachinery').textContent = fmt(machinery);
+    document.getElementById('outLabour').textContent = fmt(labour);
+    document.getElementById('outSubtotal').textContent = fmt(subtotal);
+    document.getElementById('outProfit').textContent = fmt(profit);
+    document.getElementById('outCostBeforeTransport').textContent = fmt(costBeforeTransport);
+    document.getElementById('outTransport').textContent = fmt(transportPerCum);
+    document.getElementById('outFinal').textContent = fmt(finalRate);
+
+    document.getElementById('loadNote').textContent = spreadLoad
+      ? `Trip cost ${fmt(tripCost)} spread across a ${mixerCapacity} cum load (${tripDistance} km ${roundTrip ? 'round trip' : 'one way'}).`
+      : `Trip cost ${fmt(tripCost)} applied directly as the per-cum transport cost (${tripDistance} km ${roundTrip ? 'round trip' : 'one way'}).`;
+
+    const sellingPriceVal = document.getElementById('sellingPrice').value;
+    const sellCheck = document.getElementById('sellCheck');
+    if (sellingPriceVal !== '') {
+      const sellingPrice = parseFloat(sellingPriceVal) || 0;
+      const breakeven = subtotal + transportPerCum;
+      const actualProfit = sellingPrice - breakeven;
+      const marginCost = breakeven !== 0 ? (actualProfit / breakeven * 100) : 0;
+      const marginSell = sellingPrice !== 0 ? (actualProfit / sellingPrice * 100) : 0;
+      const gap = finalRate - sellingPrice;
+
+      document.getElementById('outBreakeven').textContent = fmt(breakeven);
+      const profitEl = document.getElementById('outActualProfit');
+      profitEl.textContent = fmt(actualProfit);
+      profitEl.classList.toggle('pos', actualProfit >= 0);
+      profitEl.classList.toggle('neg', actualProfit < 0);
+
+      const mcEl = document.getElementById('outMarginCost');
+      mcEl.textContent = marginCost.toFixed(2) + '%';
+      mcEl.classList.toggle('pos', marginCost >= 0);
+      mcEl.classList.toggle('neg', marginCost < 0);
+
+      const msEl = document.getElementById('outMarginSell');
+      msEl.textContent = marginSell.toFixed(2) + '%';
+      msEl.classList.toggle('pos', marginSell >= 0);
+      msEl.classList.toggle('neg', marginSell < 0);
+
+      document.getElementById('gapLabel').textContent = gap >= 0 ? 'Below target rate by' : 'Above target rate by';
+      document.getElementById('outGap').textContent = fmt(Math.abs(gap));
+
+      sellCheck.hidden = false;
+    } else {
+      sellCheck.hidden = true;
+    }
+  }
+
+  document.getElementById('addRow').addEventListener('click', () => { addRow(); recalc(); });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    buildDefaultMix();
+    document.getElementById('machineryPct').value = 1.5;
+    document.getElementById('labourPct').value = 2;
+    document.getElementById('profitPct').value = 10;
+    document.querySelector('input[name="method"][value="mileage"]').checked = true;
+    document.getElementById('ratePerKm').value = 15;
+    document.getElementById('dieselPrice').value = 100;
+    document.getElementById('kmPerLiter').value = 2;
+    document.getElementById('distanceKm').value = 5;
+    document.getElementById('roundTrip').checked = true;
+    document.getElementById('spreadLoad').checked = true;
+    document.getElementById('mixerCapacity').value = 7;
+    document.getElementById('sellingPrice').value = '';
+    updateMethodVisibility();
+    recalc();
+  });
+
+  document.querySelectorAll('input[name="method"]').forEach(r => {
+    r.addEventListener('change', () => { updateMethodVisibility(); recalc(); });
+  });
+
+  ['machineryPct','labourPct','profitPct','ratePerKm','dieselPrice','kmPerLiter','distanceKm','mixerCapacity','sellingPrice']
+    .forEach(id => document.getElementById(id).addEventListener('input', recalc));
+
+  document.getElementById('roundTrip').addEventListener('change', recalc);
+  document.getElementById('spreadLoad').addEventListener('change', recalc);
+
+  buildDefaultMix();
+  updateMethodVisibility();
+  recalc();
+</script>
+
+</body>
+</html>
